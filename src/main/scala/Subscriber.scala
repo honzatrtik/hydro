@@ -1,10 +1,9 @@
 import cats.effect._
 import cats.implicits._
-import io.circe.parser._
-import io.circe.generic.semiauto._
+import domain.Measurement
 import fs2.Stream
 import fs2.concurrent.Queue
-import io.circe.{ Decoder, Encoder }
+import io.circe.parser._
 import io.circe.syntax._
 import org.eclipse.paho.client.mqttv3._
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
@@ -24,14 +23,6 @@ object Subscriber extends IOApp {
   ) extends Event
   final case class ConnectionLost(e: Throwable) extends Event
   final case class DeliveryComplete() extends Event
-
-  case class Measurement(temperature: Double, ec: Double, ph: Double)
-  object Measurement {
-    object Implicits {
-      lazy val measurementDecoder: Decoder[Measurement] = deriveDecoder[Measurement]
-      lazy val measurementEncoder: Encoder[Measurement] = deriveEncoder[Measurement]
-    }
-  }
 
   def run(args: List[String]): IO[ExitCode] = {
 
