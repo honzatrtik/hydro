@@ -12,7 +12,7 @@ object Subscriber extends IOApp with LogSupport {
   def run(args: List[String]): IO[ExitCode] = {
 
     val mqttConfig = MqttMeasurementSource.Config(
-      Uri.unsafeFromString("tcp://192.168.1.100:1883"),
+      Uri.unsafeFromString("tcp://test.mosquitto.org"),
       "outTopic",
     )
 
