@@ -5,7 +5,6 @@ import cats.implicits._
 import fs2.Stream
 import fs2.concurrent.Queue
 import hydro.domain.{ Measurement, MeasurementSource }
-import io.circe.parser.parse
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.eclipse.paho.client.mqttv3.{ IMqttDeliveryToken, MqttCallback, MqttClient, MqttMessage }
 import org.http4s.Uri
@@ -17,17 +16,20 @@ class MqttMeasurementSource(config: MqttMeasurementSource.Config)(implicit cs: C
 
   def makeStream: Stream[IO, Measurement] = {
     makeConnection(config.brokerUri)
-      .flatMap(registerCallbacks(_, config.topic))
+      .flatMap(registerCallbacks(_, config.topicToSubscribe))
       .collect {
-        case Event.MessageArrived(_, body) => {
-          parse(body)
-            .flatMap(_.as[Measurement](Measurement.Codec.measurementDecoder))
+        case Event.MessageArrived(topic, body) => {
+          config
+            .topicValueMapper
+            .get(topic)
+            .ap(body.toDoubleOption)
             .some
+
         }
         case Event.ConnectionLost(_) => none
       }
       .unNoneTerminate
-      .collect { case Right(measurement) => measurement }
+      .collect { case Some(measurement) => measurement }
   }
 
   private def makeConnection(brokerUri: Uri): Stream[IO, MqttClient] = {
@@ -40,15 +42,15 @@ class MqttMeasurementSource(config: MqttMeasurementSource.Config)(implicit cs: C
     })(mqttClient => IO(mqttClient.disconnect()))
   }
 
-  private def registerCallbacks(mqttClient: MqttClient, topic: String): Stream[IO, Event] = {
+  private def registerCallbacks(mqttClient: MqttClient, topicToSubscribe: Topic): Stream[IO, Event] = {
     for {
-      _ <- Stream.eval(IO(mqttClient.subscribe(topic)))
+      _ <- Stream.eval(IO(mqttClient.subscribe(topicToSubscribe.topic)))
       queue <- Stream.eval(Queue.unbounded[IO, Either[Throwable, Event]])
       _ <- Stream.eval(IO.delay {
         mqttClient.setCallback(new MqttCallback {
-          def messageArrived(messageTopic: String, message: MqttMessage): Unit = {
+          def messageArrived(topic: String, message: MqttMessage): Unit = {
             ConcurrentEffect[IO]
-              .runAsync(queue.enqueue1(Event.MessageArrived(messageTopic, message.toString).asRight))(_ => {
+              .runAsync(queue.enqueue1(Event.MessageArrived(Topic(topic), message.toString).asRight))(_ => {
                 IO(logger.debug(s"Message arrived: ${topic} ${message}"))
               })
               .unsafeRunSync()
@@ -81,11 +83,19 @@ object MqttMeasurementSource {
 
   def apply(config: Config)(implicit cs: ContextShift[IO]): MqttMeasurementSource = new MqttMeasurementSource(config)
 
-  case class Config(brokerUri: Uri, topic: String)
+  type ValueMapper = Measurement.Value => Measurement
+
+  case class Topic(topic: String)
+
+  case class Config(
+    brokerUri: Uri,
+    topicToSubscribe: Topic,
+    topicValueMapper: Map[Topic, ValueMapper]
+  )
 
   sealed trait Event
   object Event {
-    final case class MessageArrived(topic: String, body: String) extends Event
+    final case class MessageArrived(topic: Topic, body: String) extends Event
     final case class ConnectionLost(e: Throwable) extends Event
     final case class DeliveryComplete() extends Event
   }
