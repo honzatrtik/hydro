@@ -1,5 +1,11 @@
 ThisBuild / scalaVersion := "2.13.1"
 
+val circeVersion = "0.12.3"
+val circe = Seq(
+  "io.circe" %% "circe-core",
+  "io.circe" %% "circe-generic",
+  "io.circe" %% "circe-parser"
+).map(_ % circeVersion)
 
 lazy val root = (project in file("."))
   .settings(
@@ -12,5 +18,5 @@ lazy val root = (project in file("."))
       "org.typelevel" %% "cats-effect" % "2.1.2",
       "org.http4s" %% "http4s-core" % "0.21.3",
       "org.wvlet.airframe" %% "airframe-log" % "20.4.0",
-    ),
+    ) ++ circe,
   )

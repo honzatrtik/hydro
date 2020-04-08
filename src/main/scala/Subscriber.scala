@@ -1,7 +1,11 @@
 import cats.effect._
 import cats.implicits._
+import io.circe.parser._
+import io.circe.generic.semiauto._
 import fs2.Stream
 import fs2.concurrent.Queue
+import io.circe.{ Decoder, Encoder }
+import io.circe.syntax._
 import org.eclipse.paho.client.mqttv3._
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.http4s.Uri
@@ -21,6 +25,14 @@ object Subscriber extends IOApp {
   final case class ConnectionLost(e: Throwable) extends Event
   final case class DeliveryComplete() extends Event
 
+  case class Measurement(temperature: Double, ec: Double, ph: Double)
+  object Measurement {
+    object Implicits {
+      lazy val measurementDecoder: Decoder[Measurement] = deriveDecoder[Measurement]
+      lazy val measurementEncoder: Encoder[Measurement] = deriveEncoder[Measurement]
+    }
+  }
+
   def run(args: List[String]): IO[ExitCode] = {
 
     val brokerUrl = "tcp://192.168.1.100:1883"
@@ -28,6 +40,15 @@ object Subscriber extends IOApp {
 
     makeConnection(Uri.unsafeFromString(brokerUrl))
       .flatMap(makeEventStream(_, topic))
+      .collect {
+        case MessageArrived(_, body) => parse(body).flatMap(_.as[Measurement](Measurement.Implicits.measurementDecoder)).some
+        case ConnectionLost(e) => none
+      }
+      .unNoneTerminate
+      .flatMap {
+        case Right(measurement) => Stream.eval(IO(logger.debug(measurement.asJson(Measurement.Implicits.measurementEncoder).noSpaces)))
+        case Left(e) => Stream.eval(IO(logger.warn(s"Decoding failed ${e.getMessage}")))
+      }
       .compile
       .drain
       .as(ExitCode.Success)
