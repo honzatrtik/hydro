@@ -1,6 +1,8 @@
-import cats.effect._
+package hydro
+
 import cats.implicits._
-import infrastructure.MqttMeasurementSource
+import cats.effect._
+import hydro.infrastructure.MqttMeasurementSource
 import org.http4s.Uri
 import wvlet.log.{ LogFormatter, LogLevel, LogSupport, Logger }
 

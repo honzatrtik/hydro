@@ -1,10 +1,10 @@
-package infrastructure
+package hydro.infrastructure
 
 import cats.effect._
 import cats.implicits._
-import domain.{ Measurement, MeasurementSource }
 import fs2.Stream
 import fs2.concurrent.Queue
+import hydro.domain.{ Measurement, MeasurementSource }
 import io.circe.parser.parse
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.eclipse.paho.client.mqttv3.{ IMqttDeliveryToken, MqttCallback, MqttClient, MqttMessage }

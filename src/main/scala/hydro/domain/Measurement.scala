@@ -1,4 +1,4 @@
-package domain
+package hydro.domain
 
 import io.circe.{ Decoder, Encoder }
 import io.circe.generic.semiauto.{ deriveDecoder, deriveEncoder }

@@ -1,4 +1,4 @@
-package domain
+package hydro.domain
 
 import fs2._
 
