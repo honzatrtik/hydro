@@ -1,12 +1,17 @@
-import cats.implicits._
 import cats.effect._
+import cats.implicits._
 import fs2.Stream
 import fs2.concurrent.Queue
 import org.eclipse.paho.client.mqttv3._
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.http4s.Uri
+import wvlet.log.{ LogFormatter, LogLevel, Logger }
 
 object Subscriber extends IOApp {
+
+  private val logger = Logger.of[Subscriber.type]
+  logger.setFormatter(LogFormatter.IntelliJLogFormatter)
+  logger.setLogLevel(LogLevel.DEBUG)
 
   sealed trait Event
   final case class MessageArrived(
@@ -29,12 +34,12 @@ object Subscriber extends IOApp {
 
   }
 
-  private def makeConnection(brokerUrl: Uri): Stream[IO, MqttClient] = {
+  private def makeConnection(brokerUri: Uri): Stream[IO, MqttClient] = {
     Stream.bracket(IO {
       val persistence = new MemoryPersistence
-      val client = new MqttClient(brokerUrl.toString(), MqttClient.generateClientId, persistence)
+      val client = new MqttClient(brokerUri.toString(), MqttClient.generateClientId, persistence)
       client.connect()
-      println("Connected")
+      logger.info(s"Connected to ${brokerUri}")
       client
     })(mqttClient => IO(mqttClient.disconnect()))
   }
@@ -48,7 +53,7 @@ object Subscriber extends IOApp {
           def messageArrived(messageTopic: String, message: MqttMessage): Unit = {
             ConcurrentEffect[IO]
               .runAsync(queue.enqueue1(MessageArrived(messageTopic, message.toString).asRight))(_ => {
-                IO(println(s"Message arrived: ${topic} ${message}"))
+                IO(logger.debug(s"Message arrived: ${topic} ${message}"))
               })
               .unsafeRunSync()
           }
@@ -56,7 +61,7 @@ object Subscriber extends IOApp {
           def connectionLost(e: Throwable): Unit = {
             ConcurrentEffect[IO]
               .runAsync(queue.enqueue1(ConnectionLost(e).asRight))(_ => {
-                IO(println(s"Connection lost: ${e}"))
+                IO(logger.debug(s"Connection lost: ${e}"))
               })
               .unsafeRunSync()
           }
@@ -64,7 +69,7 @@ object Subscriber extends IOApp {
           def deliveryComplete(token: IMqttDeliveryToken): Unit = {
             ConcurrentEffect[IO]
               .runAsync(queue.enqueue1(DeliveryComplete().asRight))(_ => {
-                IO(println(s"Delivery complete"))
+                IO(logger.debug(s"Delivery complete"))
               })
               .unsafeRunSync()
           }
