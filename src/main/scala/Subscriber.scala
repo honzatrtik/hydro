@@ -6,8 +6,8 @@ import wvlet.log.{ LogFormatter, LogLevel, LogSupport, Logger }
 
 object Subscriber extends IOApp with LogSupport {
 
-  logger.setFormatter(LogFormatter.IntelliJLogFormatter)
-  logger.setLogLevel(LogLevel.DEBUG)
+  Logger.setDefaultLogLevel(LogLevel.DEBUG)
+  Logger.setDefaultFormatter(LogFormatter.IntelliJLogFormatter)
 
   def run(args: List[String]): IO[ExitCode] = {
 
