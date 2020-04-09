@@ -1,5 +1,12 @@
 ThisBuild / scalaVersion := "2.13.1"
 
+val doobieVersion = "0.9.0"
+val doobie = Seq(
+  "org.tpolecat" %% "doobie-core",
+  "org.tpolecat" %% "doobie-hikari",
+  "org.tpolecat" %% "doobie-postgres",
+).map(_ % doobieVersion)
+
 lazy val root = (project in file("."))
   .settings(
     name := "hydro",
@@ -11,5 +18,5 @@ lazy val root = (project in file("."))
       "org.typelevel" %% "cats-effect" % "2.1.2",
       "org.http4s" %% "http4s-core" % "0.21.3",
       "org.wvlet.airframe" %% "airframe-log" % "20.4.0",
-    ),
+    ) ++ doobie,
   )
