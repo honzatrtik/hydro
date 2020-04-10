@@ -93,6 +93,14 @@ object MqttMeasurementSource {
     topicValueMapper: Map[Topic, ValueMapper]
   )
 
+  object Config {
+    def brokerUriFromEnv(topicToSubscribe: Topic, topicValueMapper: Map[Topic, ValueMapper]): Config = Config(
+      Uri.unsafeFromString(sys.env("MQTT_BROKER_URI")),
+      topicToSubscribe,
+      topicValueMapper,
+    )
+  }
+
   sealed trait Event
   object Event {
     final case class MessageArrived(topic: Topic, body: String) extends Event

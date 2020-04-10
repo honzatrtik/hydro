@@ -12,6 +12,15 @@ object DoobieTransactor {
     password: String,
   )
 
+  object Config {
+    def fromEnv: Config = Config(
+      sys.env("DOOBIE_DRIVER"),
+      sys.env("DOOBIE_URL"),
+      sys.env("DOOBIE_USER"),
+      sys.env("DOOBIE_PASSWORD"),
+    )
+  }
+
   def make(config: Config)(implicit cs: ContextShift[IO]): Transactor[IO] = {
     Transactor.fromDriverManager[IO](
       config.driver,

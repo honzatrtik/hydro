@@ -7,25 +7,20 @@ import cats.effect._
 import fs2.Stream
 import hydro.domain.Measurement.{ Ec, Ph, Temperature }
 import hydro.domain.{ MeasurementRepository, MeasurementSource }
-import hydro.infrastructure.{ DoobieMeasurementRepository, DoobieTransactor, MqttMeasurementSource }
+import hydro.infrastructure.{ DoobieMeasurementRepository, DoobieTransactor, LoggerConfig, MqttMeasurementSource }
 import hydro.infrastructure.MqttMeasurementSource.Topic
-import org.http4s.Uri
-import wvlet.log.{ LogFormatter, LogLevel, LogSupport, Logger }
+import wvlet.log.{ LogSupport, Logger }
 
 object Subscriber extends IOApp with LogSupport {
 
-  Logger.setDefaultLogLevel(LogLevel.DEBUG)
-  Logger.setDefaultFormatter(LogFormatter.IntelliJLogFormatter)
+  private val loggerConfig = LoggerConfig.default
 
-  private val doobieConfig = DoobieTransactor.Config(
-    "org.postgresql.Driver",
-    "jdbc:postgresql://127.0.0.1/hydro",
-    "hydro",
-    "hydr0hydrO",
-  )
+  Logger.setDefaultLogLevel(loggerConfig.level)
+  Logger.setDefaultFormatter(loggerConfig.formatter)
 
-  private val mqttConfig = MqttMeasurementSource.Config(
-    Uri.unsafeFromString("tcp://test.mosquitto.org"),
+  private val doobieConfig = DoobieTransactor.Config.fromEnv
+
+  private val mqttConfig = MqttMeasurementSource.Config.brokerUriFromEnv(
     Topic("hydro/1/+"),
     Map(
       Topic("hydro/1/temperature") -> Temperature,
