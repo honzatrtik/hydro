@@ -1,14 +1,10 @@
 package hydro
 
-import cats.Applicative
-import cats.data.Kleisli
-import cats.implicits._
 import cats.effect._
-import fs2.Stream
 import hydro.domain.Measurement.{ Ec, Ph, Temperature }
-import hydro.domain.{ MeasurementRepository, MeasurementSource }
-import hydro.infrastructure.{ DoobieMeasurementRepository, DoobieTransactor, LoggerConfig, MqttMeasurementSource }
+import hydro.domain.{ MeasurementRepository, MeasurementSource, Program }
 import hydro.infrastructure.MqttMeasurementSource.Topic
+import hydro.infrastructure.{ DoobieMeasurementRepository, DoobieTransactor, LoggerConfig, MqttMeasurementSource }
 import wvlet.log.{ LogSupport, Logger }
 
 object Subscriber extends IOApp with LogSupport {
@@ -29,28 +25,12 @@ object Subscriber extends IOApp with LogSupport {
     )
   )
 
-  trait Context[F[_]] {
-    def measurementRepository: MeasurementRepository[F]
-    def measurementSource: MeasurementSource[F]
-  }
-
-  private def program[F[_]: Applicative](implicit compiler: Stream.Compiler[F, F]):  Kleisli[F, Context[F], ExitCode] = {
-    Kleisli[F, Context[F], ExitCode] { context =>
-      context.measurementSource
-        .makeStream
-        .evalMapChunk(context.measurementRepository.save)
-        .compile
-        .drain
-        .as(ExitCode.Success)
-    }
-  }
-
   def run(args: List[String]): IO[ExitCode] = {
     val clock = Clock.create[IO]
     val transactor = DoobieTransactor
       .make(doobieConfig)
 
-    program[IO].run(new Context[IO] {
+    Program[IO].run(new Program.Context[IO] {
       def measurementRepository: MeasurementRepository[IO] = new DoobieMeasurementRepository(transactor, clock)
       def measurementSource: MeasurementSource[IO] = MqttMeasurementSource(mqttConfig)
     })
