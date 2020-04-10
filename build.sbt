@@ -20,7 +20,7 @@ lazy val root = (project in file("."))
       "org.wvlet.airframe" %% "airframe-log" % "20.4.0",
     ) ++ doobie,
     packageName in Docker := "hydro/app",
-    dockerBaseImage := "openjdk:8-jdk-alpine3.9",
+    dockerBaseImage := "openjdk:8-jre",
     dockerRepository := Some("docker.pkg.github.com"),
     dockerUsername := Some("honzatrtik"),
   )
