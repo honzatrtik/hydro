@@ -35,7 +35,7 @@ class MqttMeasurementSource(config: MqttMeasurementSource.Config)(implicit cs: C
   private def makeConnection(brokerUri: Uri): Stream[IO, MqttClient] = {
     Stream.bracket(IO {
       val persistence = new MemoryPersistence
-      val client = new MqttClient(brokerUri.toString(), MqttClient.generateClientId, persistence)
+      val client = new MqttClient(brokerUri.toString(), config.clientId, persistence)
       client.connect()
       logger.info(s"Connected to ${brokerUri}")
       client
@@ -88,13 +88,15 @@ object MqttMeasurementSource {
   case class Topic(topic: String)
 
   case class Config(
+    clientId: String,
     brokerUri: Uri,
     topicToSubscribe: Topic,
     topicValueMapper: Map[Topic, ValueMapper]
   )
 
   object Config {
-    def brokerUriFromEnv(topicToSubscribe: Topic, topicValueMapper: Map[Topic, ValueMapper]): Config = Config(
+    def clientIdAndBrokerUriFromEnv(topicToSubscribe: Topic, topicValueMapper: Map[Topic, ValueMapper]): Config = Config(
+      sys.env("MQTT_CLIENT_ID"),
       Uri.unsafeFromString(sys.env("MQTT_BROKER_URI")),
       topicToSubscribe,
       topicValueMapper,
