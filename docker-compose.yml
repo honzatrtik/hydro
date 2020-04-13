@@ -1,0 +1,67 @@
+version: "3.7"
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg11
+    environment:
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - backend
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://127.0.0.1:3100/loki/api/v1/push"
+        loki-retries: "5"
+        loki-batch-size: "400"
+
+  app:
+    image: docker.pkg.github.com/honzatrtik/hydro/app:${APP_IMAGE_TAG}
+    environment:
+      DOOBIE_DRIVER: org.postgresql.Driver
+      DOOBIE_URL: jdbc:postgresql://timescaledb/hydro
+      DOOBIE_USER: $DOOBIE_USER
+      DOOBIE_PASSWORD: $DOOBIE_PASSWORD
+      MQTT_CLIENT_ID: honzatrtik82
+      MQTT_BROKER_URI: tcp://test.mosquitto.org
+    depends_on:
+      - timescaledb
+    networks:
+      - backend
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://127.0.0.1:3100/loki/api/v1/push"
+        loki-retries: "5"
+        loki-batch-size: "400"
+
+  grafana:
+    image: grafana/grafana:6.7.2
+    ports:
+      - 80:3000
+    environment: []
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - timescaledb
+    networks:
+      - backend
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://127.0.0.1:3100/loki/api/v1/push"
+        loki-retries: "5"
+        loki-batch-size: "400"
+
+volumes:
+  db-data:
+    driver: local
+  grafana-data:
+    driver: local
+  loki-data:
+    driver: local
+
+networks:
+  backend:
