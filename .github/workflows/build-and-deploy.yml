@@ -41,4 +41,5 @@ jobs:
           DOOBIE_PASSWORD: ${{ secrets.DOOBIE_PASSWORD }}
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          GF_SECURITY_ADMIN_PASSWORD: ${{ secrets.GF_SECURITY_ADMIN_PASSWORD }}
         run: docker-compose pull && docker-compose up -d
