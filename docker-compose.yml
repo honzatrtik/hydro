@@ -2,7 +2,8 @@ version: "3.7"
 
 services:
   timescaledb:
-    image: timescale/timescaledb:latest-pg11
+    build:
+      context: build/timescaledb
     environment:
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
