@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>Hydro monitor</title>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="googlebot" content="noindex, nofollow">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <script type="text/javascript" src="https://unpkg.com/mqtt@2.12.0/dist/mqtt.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/@reactivex/rxjs@6.5.5/dist/global/rxjs.umd.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.25.3/moment.min.js"></script>
+
+</head>
+<body>
+<h1>Hydro monitor</h1>
+<table class="table">
+    <tbody>
+    <tr>
+        <th>Temp</th>
+        <td><span id="temperature">No data</span></td>
+        <td><code> °C</code></td>
+        <td><small id="temperature-last-update"></small></td>
+    </tr>
+    <tr>
+        <th>PH</th>
+        <td><span id="ph">No data</span></td>
+        <td></td>
+        <td><small id="ph-last-update"></small></td>
+    </tr>
+    <tr>
+        <th>EC</th>
+        <td><span id="ec">No data</span></td>
+        <td><code>mS/cm<sup>2</sup></code></td>
+        <td><small id="ec-last-update"></small></td>
+    </tr>
+    </tbody>
+</table>
+
+<script type="text/javascript">//<![CDATA[
+
+const url = "wss://test.mosquitto.org:8081"
+let client = mqtt.connect(url)
+
+client.on('connect', function () {
+    client.subscribe('hydro/1/+', function (err) {
+        if (!err) {
+            console.log(`Connected to ${url}`)
+        }
+    })
+})
+
+const metrics = new rxjs.Observable(subscriber => {
+    client.on('message', function (topic, message) {
+        let value = message.toString()
+        const regex = /hydro\/([0-9]+)\/(.*)/;
+        const [, id, metric] = topic.match(regex);
+        if (value && id && metric) {
+            subscriber.next({
+                metric: metric,
+                value: value,
+                received: moment(),
+            })
+        }
+    })
+})
+
+const initialData = {
+    temperature: "no data",
+    temperatureReceived: undefined,
+    ph: "no data",
+    temperatureReceived: undefined,
+}
+
+const transformer = rxjs.operators.scan((data, measurement) => {
+    return {
+        ...data,
+        [measurement.metric]: {
+            value: measurement.value,
+            received: measurement.received,
+        }
+    }
+}, {})
+
+let transformedData$ = metrics.pipe(transformer)
+
+transformedData$
+    .subscribe(data => {
+        for (metric in data) {
+            document.getElementById(metric).innerText = data[metric].value
+        }
+    })
+
+rxjs
+    .combineLatest(transformedData$, rxjs.timer(0, 1000))
+    .pipe(
+        rxjs.operators.throttleTime(1000),
+        rxjs.operators.map((x) => x[0])
+    )
+    .subscribe((data) => {
+       for (metric in data) {
+            document.getElementById(metric + "-last-update").innerText = data[metric].received.fromNow()
+        }
+    })
+
+  //]]>
+</script>
+</body>
+</html>
