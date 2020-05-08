@@ -18,6 +18,20 @@ services:
         loki-retries: "5"
         loki-batch-size: "400"
 
+  static:
+    build:
+      context: build/static
+    ports:
+    - 8666:8080
+    depends_on:
+      - vernemq
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://127.0.0.1:3100/loki/api/v1/push"
+        loki-retries: "5"
+        loki-batch-size: "400"
+
   app:
     image: docker.pkg.github.com/honzatrtik/hydro/app:${APP_IMAGE_TAG}
     environment:

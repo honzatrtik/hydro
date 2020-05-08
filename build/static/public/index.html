@@ -42,8 +42,12 @@
 
 <script type="text/javascript">//<![CDATA[
 
-const url = "wss://test.mosquitto.org:8081"
-let client = mqtt.connect(url)
+const url = "ws://161.35.29.34:8080/mqtt"
+let client = mqtt.connect(url, {
+    clientId: "hydro_read_public",
+    username: "hydro_read_public",
+    password: "hydro_read_public",
+})
 
 client.on('connect', function () {
     client.subscribe('hydro/1/+', function (err) {
@@ -85,7 +89,20 @@ const transformer = rxjs.operators.scan((data, measurement) => {
     }
 }, {})
 
-let transformedData$ = metrics.pipe(transformer)
+let transformedData$ = metrics
+    .pipe(
+        rxjs.operators.map((measurement) => {
+            if (measurement.metric === "ec") {
+                return {
+                    ...measurement,
+                    value: measurement.value / 1000 // Convert uS/cm2 -> mS/cm2 to get EC
+                }
+            } else {
+                return measurement
+            }
+        }),
+        transformer
+    )
 
 transformedData$
     .subscribe(data => {
