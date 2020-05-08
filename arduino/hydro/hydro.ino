@@ -46,8 +46,8 @@ void loop() {
   }
 
   if (!mqtt.connected()) {
-    mqtt.begin("test.mosquitto.org", 1883, client);
-    while (!mqtt.connect("arduino")) {
+    mqtt.begin("161.35.29.34", 1883, client);
+    while (!mqtt.connect("hydro_client", "hydro_write", "i_need_to_write_hydro_data")) {
       Serial.println(".");
       delay(1000);
     }
