@@ -25,7 +25,7 @@ services:
       DOOBIE_URL: jdbc:postgresql://timescaledb/hydro
       DOOBIE_USER: $DOOBIE_USER
       DOOBIE_PASSWORD: $DOOBIE_PASSWORD
-      MQTT_CLIENT_ID: hydro_client
+      MQTT_CLIENT_ID: hydro_read
       MQTT_USERNAME: $MQTT_USERNAME
       MQTT_PASSWORD: $MQTT_PASSWORD
       MQTT_BROKER_URI: tcp://vernemq

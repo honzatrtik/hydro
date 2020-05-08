@@ -47,7 +47,7 @@ void loop() {
 
   if (!mqtt.connected()) {
     mqtt.begin("161.35.29.34", 1883, client);
-    while (!mqtt.connect("hydro_client", "hydro_write", "i_need_to_write_hydro_data")) {
+    while (!mqtt.connect("hydro_write", "hydro_write", "i_need_to_write_hydro_data")) {
       Serial.println(".");
       delay(1000);
     }
