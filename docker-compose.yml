@@ -66,6 +66,7 @@ services:
     ports:
       - 1883:1883
       - 8080:8080
+      - 8888:8888
     environment:
       DOCKER_VERNEMQ_ACCEPT_EULA: "yes"
       DOCKER_VERNEMQ_PLUGINS__VMQ_ACL: "off"
