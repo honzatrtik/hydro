@@ -25,10 +25,13 @@ services:
       DOOBIE_URL: jdbc:postgresql://timescaledb/hydro
       DOOBIE_USER: $DOOBIE_USER
       DOOBIE_PASSWORD: $DOOBIE_PASSWORD
-      MQTT_CLIENT_ID: honzatrtik82
-      MQTT_BROKER_URI: tcp://test.mosquitto.org
+      MQTT_CLIENT_ID: hydro_client
+      MQTT_USERNAME: $MQTT_USERNAME
+      MQTT_PASSWORD: $MQTT_PASSWORD
+      MQTT_BROKER_URI: tcp://vernemq
     depends_on:
       - timescaledb
+      - vernemq
     networks:
       - backend
     logging:
@@ -49,6 +52,30 @@ services:
       - grafana-data:/var/lib/grafana
     depends_on:
       - timescaledb
+    networks:
+      - backend
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://127.0.0.1:3100/loki/api/v1/push"
+        loki-retries: "5"
+        loki-batch-size: "400"
+
+  vernemq:
+    image: vernemq/vernemq
+    ports:
+      - 1883:1883
+      - 8080:8080
+    environment:
+      DOCKER_VERNEMQ_ACCEPT_EULA: yes
+      DOCKER_VERNEMQ_PLUGINS__VMQ_ACL: "off"
+      DOCKER_VERNEMQ_PLUGINS__VMQ_DIVERSITY: "on"
+      DOCKER_VERNEMQ_VMQ_DIVERSITY__POSTGRES__HOST: "timescaledb"
+      DOCKER_VERNEMQ_VMQ_DIVERSITY__POSTGRES__PORT: "5432"
+      DOCKER_VERNEMQ_VMQ_DIVERSITY__POSTGRES__USER: $POSTGRES_USER
+      DOCKER_VERNEMQ_VMQ_DIVERSITY__POSTGRES__PASSWORD: $POSTGRES_PASSWORD
+      DOCKER_VERNEMQ_VMQ_DIVERSITY__POSTGRES__DATABASE: hydro
+      DOCKER_VERNEMQ_VMQ_DIVERSITY__POSTGRES__HASH_METHOD: "crypt"
     networks:
       - backend
     logging:

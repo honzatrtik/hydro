@@ -6,7 +6,7 @@ import fs2.Stream
 import fs2.concurrent.Queue
 import hydro.domain.{ Measurement, MeasurementSource }
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
-import org.eclipse.paho.client.mqttv3.{ IMqttDeliveryToken, MqttCallback, MqttClient, MqttMessage }
+import org.eclipse.paho.client.mqttv3.{ IMqttDeliveryToken, MqttCallback, MqttClient, MqttConnectOptions, MqttMessage }
 import org.http4s.Uri
 import wvlet.log.LogSupport
 
@@ -15,7 +15,7 @@ class MqttMeasurementSource(config: MqttMeasurementSource.Config)(implicit cs: C
   import MqttMeasurementSource._
 
   def makeStream: Stream[IO, Measurement] = {
-    makeConnection(config.brokerUri)
+    makeConnection(config)
       .flatMap(registerCallbacks(_, config.topicToSubscribe))
       .collect {
         case Event.MessageArrived(topic, body) => {
@@ -32,12 +32,19 @@ class MqttMeasurementSource(config: MqttMeasurementSource.Config)(implicit cs: C
       .collect { case Some(measurement) => measurement }
   }
 
-  private def makeConnection(brokerUri: Uri): Stream[IO, MqttClient] = {
+  private def makeConnectOptions(config: MqttMeasurementSource.Config): MqttConnectOptions = {
+    val connectOptions = new MqttConnectOptions()
+    connectOptions.setUserName(config.username)
+    connectOptions.setPassword(config.password.toCharArray)
+    connectOptions
+  }
+
+  private def makeConnection(config: MqttMeasurementSource.Config): Stream[IO, MqttClient] = {
     Stream.bracket(IO {
       val persistence = new MemoryPersistence
-      val client = new MqttClient(brokerUri.toString(), config.clientId, persistence)
-      client.connect()
-      logger.info(s"Connected to ${brokerUri}")
+      val client = new MqttClient(config.brokerUri.toString(), config.clientId, persistence)
+      client.connect(makeConnectOptions(config))
+      logger.info(s"Connected to ${config.brokerUri}")
       client
     })(mqttClient => IO(mqttClient.disconnect()))
   }
@@ -89,14 +96,18 @@ object MqttMeasurementSource {
 
   case class Config(
     clientId: String,
+    username: String,
+    password: String,
     brokerUri: Uri,
     topicToSubscribe: Topic,
     topicValueMapper: Map[Topic, ValueMapper]
   )
 
   object Config {
-    def clientIdAndBrokerUriFromEnv(topicToSubscribe: Topic, topicValueMapper: Map[Topic, ValueMapper]): Config = Config(
+    def credentialsAndBrokerUriFromEnv(topicToSubscribe: Topic, topicValueMapper: Map[Topic, ValueMapper]): Config = Config(
       sys.env("MQTT_CLIENT_ID"),
+      sys.env("MQTT_USERNAME"),
+      sys.env("MQTT_PASSWORD"),
       Uri.unsafeFromString(sys.env("MQTT_BROKER_URI")),
       topicToSubscribe,
       topicValueMapper,

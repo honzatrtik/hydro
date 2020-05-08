@@ -16,7 +16,7 @@ object Subscriber extends IOApp with LogSupport {
 
   private val doobieConfig = DoobieTransactor.Config.fromEnv
 
-  private val mqttConfig = MqttMeasurementSource.Config.clientIdAndBrokerUriFromEnv(
+  private val mqttConfig = MqttMeasurementSource.Config.credentialsAndBrokerUriFromEnv(
     Topic("hydro/1/+"),
     Map(
       Topic("hydro/1/temperature") -> Temperature,
