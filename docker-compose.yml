@@ -11,6 +11,7 @@ services:
       - db-data:/var/lib/postgresql/data
     networks:
       - backend
+    restart: on-failure
     logging:
       driver: loki
       options:
@@ -25,6 +26,7 @@ services:
     - 8666:8080
     depends_on:
       - vernemq
+    restart: on-failure
     logging:
       driver: loki
       options:
@@ -48,6 +50,7 @@ services:
       - vernemq
     networks:
       - backend
+    restart: on-failure
     logging:
       driver: loki
       options:
@@ -68,6 +71,7 @@ services:
       - timescaledb
     networks:
       - backend
+    restart: on-failure
     logging:
       driver: loki
       options:
@@ -97,6 +101,7 @@ services:
       DOCKER_VERNEMQ_VMQ_DIVERSITY__POSTGRES__SSL: "off"
     networks:
       - backend
+    restart: on-failure
     logging:
       driver: loki
       options:
