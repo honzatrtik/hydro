@@ -9,4 +9,7 @@ CREATE TABLE measurements (
   value DOUBLE PRECISION NOT NULL
 );
 
+SELECT create_hypertable('measurements', 'timestamp', migrate_data => true);
+
+
 EOSQL
