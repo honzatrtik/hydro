@@ -9,5 +9,5 @@ case class LoggerConfig(
 )
 
 object LoggerConfig {
-  val default: LoggerConfig = LoggerConfig(LogLevel.DEBUG, AppLogFormatter)
+  val default: LoggerConfig = LoggerConfig(LogLevel.WARN, AppLogFormatter)
 }
