@@ -24,8 +24,8 @@ object OpenWeatherMap extends DataScraper[IO, OpenWeatherMapConfig] {
               .hcursor
               .downField("dt")
               .as[Long]
-              .map { epoch =>
-                val dateTime = Instant.ofEpochMilli(epoch).atZone(TimeZone.getTimeZone("UTC").toZoneId)
+              .map { seconds =>
+                val dateTime = Instant.ofEpochMilli(seconds * 1000).atZone(TimeZone.getTimeZone("UTC").toZoneId)
                 ScrapedData("openweathermap.org", dateTime, json)
               }
               .leftMap(decodingFailure => ScrapeError.InvalidResponse(decodingFailure.message))
