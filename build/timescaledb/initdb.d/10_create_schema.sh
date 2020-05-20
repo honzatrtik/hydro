@@ -11,5 +11,12 @@ CREATE TABLE measurements (
 
 SELECT create_hypertable('measurements', 'timestamp', migrate_data => true);
 
+CREATE TABLE scraper_data (
+  timestamp TIMESTAMPTZ NOT NULL,
+  source TEXT NOT NULL,
+  data JSONB NOT NULL
+);
+
+SELECT create_hypertable('scraper_data', 'timestamp');
 
 EOSQL
